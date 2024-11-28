@@ -10,10 +10,10 @@ const BCRYPT_WORK_FACTOR = 10;
 
 const DB_URI =
   process.env.NODE_ENV === 'test'
-    ? 'postgresql:///bankly_test'
-    : 'postgresql:///bankly';
+    ? 'postgresql://postgres:2024@localhost/bankly_test'
+    : 'postgresql://postgres:2024@localhost/bankly';
 
-module.exports = {
+module.exports = { 
   BCRYPT_WORK_FACTOR,
   SECRET_KEY,
   PORT,
