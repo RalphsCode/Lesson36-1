@@ -1,4 +1,6 @@
-/** Database setup for jobly. */
+
+// Bug 7 - change Jobly to Bankly
+/** Database setup for Bankly. */
 
 const { Client } = require('pg');
 const { DB_URI } = require('./config');

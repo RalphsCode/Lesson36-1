@@ -63,21 +63,34 @@ router.get('/:username', authUser, requireLogin, async function(
  *
  */
 
-router.patch('/:username', authUser, requireLogin, requireAdmin, async function(
+// BUG #5 Fix - remove requireAdmin, as was not allowing a user to update their own record
+router.patch('/:username', authUser, requireLogin, async function(
   req,
   res,
   next
 ) {
   try {
-    if (!req.curr_admin && req.curr_username !== req.params.username) {
-      throw new ExpressError('Only  that user or admin can edit a user.', 401);
-    }
+    if (!req.curr_admin && req.curr_username !== req.params.username)  {
+      throw new ExpressError('Only that user or admin can edit a user.', 401);
+    };
 
     // get fields to change; remove token so we don't try to change it
     let fields = { ...req.body };
     delete fields._token;
 
-    let user = await User.update(req.params.username, fields);
+    // BUG # 6 Fix - Only allow certain fields to be updated
+    const allowedFields = ['first_name', 'last_name', 'phone', 'email'];
+    const filteredFields = Object.keys(fields).filter(key => allowedFields.includes(key));
+    const updateData = {};
+    filteredFields.forEach(key => {
+      updateData[key] = req.body[key];
+    });
+    // If there were fields that were not permitted to be patched, throw error
+    if (Object.keys(fields).length !== Object.keys(updateData).length) {
+      throw new ExpressError("Only first_name, last_name, phone and email can be updated", 422);
+    };
+    // Update the database
+    let user = await User.update(req.params.username, updateData);
     return res.json({ user });
   } catch (err) {
     return next(err);

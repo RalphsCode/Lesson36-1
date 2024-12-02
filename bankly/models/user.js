@@ -75,17 +75,17 @@ class User {
 
   /** Returns list of user info:
    *
-   * [{username, first_name, last_name, email, phone}, ...]
+   * [{username, first_name, last_name}, ...] - BUG FIX #1
    *
    * */
 
-  static async getAll(username, password) {
+    // BUG FIX #2 username & password arguments are not required
+  static async getAll() {
+    // BUG FIX #1 - do not include email & phone in returned data
     const result = await db.query(
       `SELECT username,
                 first_name,
-                last_name,
-                email,
-                phone
+                last_name
             FROM users 
             ORDER BY username`
     );
@@ -113,7 +113,8 @@ class User {
     const user = result.rows[0];
 
     if (!user) {
-      new ExpressError('No such user', 404);
+      // BUG FIX #3 - add the keyword throw to ensure the error
+      throw new ExpressError('No such user', 404);
     }
 
     return user;

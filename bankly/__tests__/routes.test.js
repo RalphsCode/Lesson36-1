@@ -105,12 +105,33 @@ describe("GET /users", function() {
     expect(response.statusCode).toBe(200);
     expect(response.body.users.length).toBe(3);
   });
+
+  // TESTS BUG #1
+  test("should return only {username, first_name, last_name}", async function() {
+    const response = await request(app)
+      .get("/users")
+      .send({ _token: tokens.u1 });
+    expect(response.statusCode).toBe(200);
+    expect(response.body.users[0]).toEqual({
+      username: "u1",
+      first_name: "fn1",
+      last_name: "ln1"
+    });
+  });
 });
 
 describe("GET /users/[username]", function() {
   test("should deny access if no token provided", async function() {
     const response = await request(app).get("/users/u1");
     expect(response.statusCode).toBe(401);
+  });
+
+  // TESTS BUG #3 - Return 404 if user not found
+  test("should return 404 if user not found", async function() {
+    const response = await request(app)
+    .get("/users/none")
+    .send({ _token: tokens.u1 });
+    expect(response.statusCode).toBe(404);
   });
 
   test("should return data on u1", async function() {
@@ -137,8 +158,16 @@ describe("PATCH /users/[username]", function() {
   test("should deny access if not admin/right user", async function() {
     const response = await request(app)
       .patch("/users/u1")
-      .send({ _token: tokens.u2 }); // wrong user!
+      .send({ _token: tokens.u2, first_name: "new-fn1" }); // wrong user!
     expect(response.statusCode).toBe(401);
+  });
+
+  // BUG #5 - New Test - Should patch with correct user, not Admin
+  test("should patch if right user, not Admin", async function() {
+    const response = await request(app)
+      .patch("/users/u2")
+      .send({ _token: tokens.u2, first_name: "new-fn2" }); // correct user!
+    expect(response.statusCode).toBe(200);
   });
 
   test("should patch data if admin", async function() {
@@ -157,14 +186,15 @@ describe("PATCH /users/[username]", function() {
     });
   });
 
-  test("should disallowing patching not-allowed-fields", async function() {
+  // Bug #6 - New Test - disallow patching of non-permitted field
+  test("should disallow patching of non-permitted field", async function() {
     const response = await request(app)
       .patch("/users/u1")
       .send({ _token: tokens.u1, admin: true });
-    expect(response.statusCode).toBe(401);
+    expect(response.statusCode).toBe(422);
   });
 
-  test("should return 404 if cannot find", async function() {
+  test("should return 404 if cannot find user", async function() {
     const response = await request(app)
       .patch("/users/not-a-user")
       .send({ _token: tokens.u3, first_name: "new-fn" }); // u3 is admin
